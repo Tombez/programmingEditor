@@ -1,4 +1,3 @@
-// Licensed under the GPLv3 license by Tom Burris
 "use strict";
 
 const parsers = [

@@ -1,5 +1,4 @@
-// Licensed under the GPLv3 license by Tom Burris
-'use strict';
+"use strict";
 
 function skipBrowserInconsistencies(object, properties) {
 	for (let property of properties) {
