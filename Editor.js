@@ -1,10 +1,9 @@
 // Licensed under the GPLv3 license by Tom Burris
-'use strict';
+"use strict";
 
 class Editor {
-	constructor(_text, _lexer, _parser, _colorMap) {
+	constructor(_text, _parser, _colorMap) {
 		this.text = _text || "";
-		this.lexer = _lexer;
 		this.parser = _parser;
 		this.colorMap = _colorMap;
 		this.init();
@@ -14,21 +13,14 @@ class Editor {
 	}
 	init() {
 		this.fontSize = 14;
-		this.tabSize = 3;
-		this.padding = 5;
-		this.scrollBarSize = 10;
-		this.standards = {
-			newline: "\n",
-			tab: "\t",
-			space: " ",
-			nothing: "",
-			twoD: "2d",
-			default: "default"
-		};
+		this.tabSize = 4;
+		this.padding = this.fontSize / 2;
+		this.scrollBarSize = 1;
 		this.selection = {
 			begin: new TextPosition(this.tabSize),
 			end: new TextPosition(this.tabSize)
 		};
+		this.fontFamily = "monospace";
 		this.scrollTop = 0;
 		this.col = 0;
 		this.focused = false;
@@ -45,7 +37,7 @@ class Editor {
 		this.copyInput = document.createElement("textarea");
 		this.copyInput.style = "position: fixed; top: -500px;";
 		this.container.appendChild(this.copyInput);
-		this.downloadLink = document.createElement('a');
+		this.downloadLink = document.createElement("a");
 		this.container.appendChild(this.downloadLink);
 	}
 	attachListeners() {
@@ -59,51 +51,44 @@ class Editor {
 	}
 	update() {
 		//console.log("update");
-		this.lines = this.parser(this.lexer(this.text));
+		this.lines = this.parser(this.text);
 		this.draw();
 	}
 	draw() {
 		//console.log("draw");
 		//let start = performance.now();
-		let ctx = this.canvas.getContext(this.standards.twoD);
+		let ctx = this.canvas.getContext("2d");
 
 		// background
 		ctx.fillStyle = this.colorMap.get("background");
 		ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-		// font loading
-		if (!this.fontFamily) {
-			ctx.font = "16px monospace";
-			ctx.textBaseline = "top";
-			ctx.fillStyle = this.colorMap.get("default");
-			ctx.fillText("Loading font...", this.padding, this.padding);
-			return;
-		}
 
 		// tokens
 		ctx.beginPath();
 		ctx.font = this.fontSize + "px " + this.fontFamily + ", monospace";
 		this.fontWidth = ctx.measureText("a").width;
 		ctx.textBaseline = "top";
-		let startX = ((((this.scrollTop + this.canvas.height) / this.fontSize) | 0) + 1).toString().length * this.fontWidth + this.padding;
+		let startX = Math.min(Math.ceil((this.scrollTop + this.canvas.height) / this.fontSize), this.lines.length).toString().length * this.fontWidth + this.padding;
 		let x =  startX;
 		let y = -(this.scrollTop % this.fontSize);
-		for (let lineNum = (this.scrollTop / this.fontSize) | 0; lineNum < this.lines.length; lineNum++) {
+		for (let lineNum = (this.scrollTop / this.fontSize) | 0; lineNum < this.lines.length && y < this.canvas.height; lineNum++) {
 			let line = this.lines[lineNum];
-			ctx.fillStyle = "#aaa";
+			ctx.globalAlpha = 0.7;
+			ctx.fillStyle = this.colorMap.get("default");
 			let visualLineNum = (lineNum + 1).toString();
 			ctx.fillText(visualLineNum,  startX -this.padding - visualLineNum.length * this.fontWidth, y);
+			ctx.globalAlpha = 1;
 			for (let token of line) {
 				switch (token.value) {
-					case this.standards.tab:
+					case "\t":
 						ctx.rect(x, y, 1, this.fontSize);
 						x += this.tabSize * this.fontWidth;
 						break;
-					case this.standards.space:
+					case " ":
 						x += this.fontWidth;
 						break;
 					default:
-						ctx.fillStyle = this.colorMap.get(token.label) || this.colorMap.get(this.standards.default);
+						ctx.fillStyle = this.colorMap.get(token.label) || this.colorMap.get("default");
 						ctx.fillText(token.value, x, y);
 						x += token.value.length * this.fontWidth;
 						break;
@@ -113,13 +98,12 @@ class Editor {
 				}
 			}
 			y += this.fontSize;
-			if (y >= this.canvas.height) {
-				break;
-			}
-			x =  startX;
+			x = startX;
 		}
-		ctx.fillStyle = "#333";
+		ctx.globalAlpha = 0.2;
+		ctx.fillStyle = this.colorMap.get("default");
 		ctx.fill();
+		ctx.globalAlpha = 1;
 
 		// scroll bar
 		let totalHeight = this.lines.length * this.fontSize;
@@ -138,22 +122,25 @@ class Editor {
 			let end = this.selection.begin.index < this.selection.end.index ? this.selection.end : this.selection.begin;
 			let x = begin.col * this.fontWidth;
 			if (begin.row == end.row) {
-				ctx.fillRect(startX + x, begin.row * this.fontSize, end.col * this.fontWidth - x, this.fontSize);
+				ctx.rect(startX + x, begin.row * this.fontSize - this.scrollTop, end.col * this.fontWidth - x, this.fontSize);
 			} else {
-				let lineStart = this.text.indexOf(this.standards.newline, begin.index) + 1;
+				let lineStart = this.text.indexOf("\n", begin.index) + 1;
 				let line = this.text.slice(begin.index, lineStart);
-				ctx.fillRect(startX + x, begin.row * this.fontSize - this.scrollTop,
-					(line.length + (line.match(/\t/g) || []).length * (this.tabSize - 1)) * this.fontWidth, this.fontSize);
+				ctx.rect(startX + x, begin.row * this.fontSize - this.scrollTop, (line.length + (line.match(/\t/g) || []).length * (this.tabSize - 1)) * this.fontWidth, this.fontSize);
 				for (let n = begin.row + 1; n < end.row; n++) {
 					let y = n * this.fontSize;
 					if (y > this.scrollTop && y < this.scrollTop + this.canvas.height) {
-						line = this.text.slice(lineStart, (lineStart = this.text.indexOf(this.standards.newline, lineStart) + 1));
-						ctx.fillRect(startX, y - this.scrollTop, (line.length + (line.match(/\t/g) || []).length * (this.tabSize - 1)) * this.fontWidth, this.fontSize);
+						line = this.text.slice(lineStart, (lineStart = this.text.indexOf("\n", lineStart) + 1));
+						ctx.rect(startX, y - this.scrollTop, (line.length + (line.match(/\t/g) || []).length * (this.tabSize - 1)) * this.fontWidth, this.fontSize);
 					}
 				}
-				ctx.fillRect(startX, end.row * this.fontSize - this.scrollTop, end.col * this.fontWidth, this.fontSize);
+				ctx.rect(startX, end.row * this.fontSize - this.scrollTop, end.col * this.fontWidth, this.fontSize);
 			}
+			ctx.fill();
+			ctx.fillStyle = "rgba(255, 235, 59, 0.2)";
+			ctx.fillRect(0, this.selection.end.row * this.fontSize - this.scrollTop, startX, this.fontSize);
 		}
+
 		//console.log(performance.now() - start);
 	}
 	type(_text) {
@@ -179,10 +166,20 @@ class Editor {
 	}
 	mousedown(_event) {
 		//console.log("mousedown");
-		this.changeSelection(_event.offsetX, _event.offsetY, this.selection.begin);
-		this.changeSelection(_event.offsetX, _event.offsetY, this.selection.end);
-		this.dragging = true;
-		this.dragLoop();
+		switch(_event.detail) {
+			case 1:
+				this.changeSelection(_event.offsetX, _event.offsetY, this.selection.begin);
+				this.changeSelection(_event.offsetX, _event.offsetY, this.selection.end);
+				this.dragging = true;
+				this.dragLoop();
+				break;
+			case 2:
+
+				break;
+			case 3:
+				
+				break;
+		}
 	}
 	mouseup(_event) {
 		//console.log("mouseup");
@@ -209,14 +206,32 @@ class Editor {
 					document.execCommand("copy");
 					this.canvas.focus();
 					break;
+				case "x": // cut
+					this.keydown({
+						shiftKey: _event.shiftKey,
+						ctrlKey: true,
+						key: "c",
+						preventDefault: function(){}
+					});
+					this.keydown({
+						shiftKey: _event.shiftKey,
+						key: "Backspace",
+						preventDefault: function(){}
+					});
+					break;
 				case "v":
 					this.pasteExpected = true;
 					prevent = false;
 					break;
+				case "a":
+					this.selection.begin.setIndex(0, this.text);
+					this.selection.end.setIndex(this.text.length, this.text);
+					this.draw();
+					break;
 				case "s": // save
 					let filename = prompt("What name and extension would you like to save this file under?");
 					if (filename) {
-						this.downloadLink.href = URL.createObjectURL(new Blob([this.text], {type:'text/plain'}));
+						this.downloadLink.href = URL.createObjectURL(new Blob([this.text], {type:"text/plain"}));
 						this.downloadLink.download = filename;
 						this.downloadLink.click();
 						URL.revokeObjectURL(this.downloadLink.href);
@@ -239,16 +254,16 @@ class Editor {
 				case "Tab":
 					let text = this.getSelection();
 					if (/\n/.test(text)) {
-						this.type(text.replace(/^/gm, this.standards.tab));
+						this.type(text.replace(/^/gm, "\t"));
 					} else {
-						this.type(this.standards.tab);
+						this.type("\t");
 					}
 					break;
 				case "Backspace":
 					if (this.selection.begin.index == this.selection.end.index) {
 						this.selection.begin.index = Math.max(this.selection.begin.index - 1, 0);
 					}
-					this.type(this.standards.nothing);
+					this.type("");
 					break;
 				case "F11":
 					if (window.fs.fullscreen()) {
@@ -288,7 +303,7 @@ class Editor {
 					this.draw();
 					break;
 				case "Enter":
-					this.type(this.standards.newline)
+					this.type("\n")
 					break;
 				default:
 					if (_event.key.length == 1) {
