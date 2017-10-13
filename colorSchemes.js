@@ -2,6 +2,13 @@
 
 const colorSchemes = [
 	{
+		name: "unknown",
+		map: new Map([
+			["default", "#fff"],
+			["background", "#000"]
+		])
+	},
+	{
 		name: "Monokai",
 		map: new Map([
 			["singlelineComment", "#75715e"],
@@ -47,6 +54,24 @@ const colorSchemes = [
 			["keyword", "#cc7833"],
 			["default", "#fff"],
 			["background", "#000"],
+			["unrecognized", "#e91e63"]
+		])
+	},
+	{
+		name: "MDN",
+		map: new Map([
+			["singlelineComment", "#708090"],
+			["multilineComment", "#708090"],
+			["string", "#669900"],
+			["regex", "#66cc33"],
+			["number", "#905"],
+			["operator", "#a67f59"],
+			["declarative", "#0077aa"],
+			["grouping", "#999"],
+			["punctuation", "#999"],
+			["keyword", "#0077aa"],
+			["default", "#333"],
+			["background", "#eee"],
 			["unrecognized", "#e91e63"]
 		])
 	}

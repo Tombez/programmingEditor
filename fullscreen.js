@@ -1,6 +1,6 @@
 "use strict";
 
-function skipBrowserInconsistencies(object, properties) {
+function skipBrowser(object, properties) {
 	for (let property of properties) {
 		if (object[property] !== undefined) {
 			return object[property];
@@ -9,11 +9,7 @@ function skipBrowserInconsistencies(object, properties) {
 	throw new Error('Browser does not have any: ' + properties.join(', or '));
 }
 window.fs = {
-	fullscreen: function() {
-		return skipBrowserInconsistencies(document, ['fullscreen', 'webkitIsFullScreen', 'mozFullScreen']);
-	},
-	requestFullscreen: function(elem) {
-		return skipBrowserInconsistencies(elem, ['requestFullscreen', 'webkitRequestFullscreen', 'mozRequestFullScreen']).bind(elem)();
-	},
-	exitFullscreen: skipBrowserInconsistencies(document, ['exitFullscreen', 'webkitExitFullscreen', 'mozCancelFullScreen']).bind(document)()
+	isFullscreen: () => skipBrowser(document, ['fullscreen', 'webkitIsFullScreen', 'mozFullScreen']),
+	requestFullscreen: _elem => skipBrowser(elem, ['requestFullscreen', 'webkitRequestFullscreen', 'mozRequestFullScreen']).bind(elem)(),
+	exitFullscreen: skipBrowser(document, ['exitFullscreen', 'webkitExitFullscreen', 'mozCancelFullScreen']).bind(document)
 };

@@ -6,7 +6,7 @@ body {
 	width: 100%;
 	height: 100%;
 	margin: 0px;
-	background: #0b0613;
+	background: #fff/*#0b0613*/;
 	font-family: 'Inconsolata', monospace;
 	overflow: hidden;
 	display: flex;

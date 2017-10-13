@@ -3,29 +3,30 @@
 	<head>
 		<meta charset="utf-8"/>
 		<title>Programming Editor</title>
-		<link href="./style.css" rel="stylesheet"></link>
-		<script src="./fullscreen.js"></script>
-		<script src="./Editor.js"></script>
-		<script src="./parsers.js"></script>
-		<script src="./colorSchemes.js"></script>
+		<link href="style.css" rel="stylesheet">
+		<!--<script src="featureTest.js"></script>-->
+		<script src="fullscreen.js"></script>
+		<script src="Editor.js"></script>
+		<script src="ParseContext.js"></script>
+		<script src="parsers.js"></script>
+		<script src="colorSchemes.js"></script>
 	</head>
 
 	<body>
 		<script>
 			const findName = _name => _elem => _elem.name == _name;
+			let editor = new Editor(parsers.find(findName("JavaScript")).setup(), colorSchemes.find(findName("Monokai")).map, Editor.toString());
+			let font = new FontFace("Ubuntu Mono", "url(https://fonts.gstatic.com/s/ubuntumono/v6/ViZhet7Ak-LRXZMXzuAfkY4P5ICox8Kq3LLUNMylGO4.woff2)");
+			document.fonts.add(font);
+			font.load().then(() => {
+				editor.fontFamily = font.family;
+				editor.draw();
+			});
 			document.addEventListener("DOMContentLoaded", () => {
-				window.editor = new Editor(Editor.toString(), parsers.find(findName("JavaScript")).setup(), colorSchemes.find(findName("Monokai")).map);
 				editor.container.id = "container";
 				editor.canvas.id = "textarea";
 				document.body.appendChild(editor.container);
 				editor.resize();
-
-				let font = new FontFace("Ubuntu Mono", "url(https://fonts.gstatic.com/s/ubuntumono/v6/ViZhet7Ak-LRXZMXzuAfkY4P5ICox8Kq3LLUNMylGO4.woff2)");
-				document.fonts.add(font);
-				font.load().then(() => {
-					editor.fontFamily = font.family;
-					editor.draw();
-				});
 			});
 		</script>
 	</body>
