@@ -43,13 +43,14 @@ let parsers = [
 		name: "JavaScript",
 		setup: () => {
 			let keywords = new Set("abstract boolean break byte case catch char class let continue debugger default delete do double else enum export extends false final finally float for function goto if implements import in instanceof int interface let long native new null package private protected public return short static super switch synchronized this throw throws transient true try typeof var void volatile while with".split(" "));
-			let declaratives = new Set("var let let class function".split(" "));
+			let declaratives = new Set("var let const class function".split(" "));
 			let forwardslash = 47;
 			let backslash = 92;
 			let newline = 10;
 			let doublequote = 34;
 			let backtick = 96;
 			let asterisk = 42;
+			let openParen = 40;
 			let digits = new Set([48,49,50,51,52,53,54,55,56,57]);
 			let whitespace = new Set([32,9,10]);
 			let puncuation = new Set([59,58,44,46]);
@@ -64,6 +65,9 @@ let parsers = [
 			let possibleIdentifierChars = new Set([95, 36, ...Array.from(letters), ...Array.from(digits)]);
 			let multilineCommentEnd = [42, 47];
 			let whitespaceString = "whitespace";
+			let keywordString = "keyword";
+			let functionString = "functionDeclaration";
+			let declarativeString = "declarative";
 			let identifierString = "indentifier";
 			let puncuationString = "puncuation";
 			let groupingString = "grouping";
@@ -91,7 +95,10 @@ let parsers = [
 					} else if (possibleFirstIdentifierChars.has(char)) {
 						let start = pC.index++;
 						pC.skipWhile(possibleIdentifierChars);
-						currentLine.push({label: identifierString, value: _input.slice(start, pC.index)});
+						const value = _input.slice(start, pC.index);
+						let label = keywords.has(value) ? keywordString : identifierString;
+						if (declaratives.has(value)) label = declarativeString;
+						currentLine.push({label, value});
 					} else if (puncuation.has(char)) {
 						currentLine.push({label: puncuationString, value: _input.charAt(pC.index++)});
 					} else if (grouping.has(char)) {
