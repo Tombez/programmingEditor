@@ -1,15 +1,16 @@
 "use strict";
 
 function skipBrowser(object, properties) {
-	for (let property of properties) {
-		if (object[property] !== undefined) {
+	for (let property of properties)
+		if (object[property] !== undefined)
 			return object[property];
-		}
-	}
 	throw new Error('Browser does not have any: ' + properties.join(', or '));
 }
+const isFsNames = ['fullscreen', 'webkitIsFullScreen', 'mozFullScreen'];
+const reqFsNames = ['requestFullscreen', 'webkitRequestFullscreen', 'mozRequestFullScreen'];
+const exitFsNames = ['exitFullscreen', 'webkitExitFullscreen', 'mozCancelFullScreen'];
 window.fs = {
-	isFullscreen: () => skipBrowser(document, ['fullscreen', 'webkitIsFullScreen', 'mozFullScreen']),
-	requestFullscreen: _elem => skipBrowser(elem, ['requestFullscreen', 'webkitRequestFullscreen', 'mozRequestFullScreen']).bind(elem)(),
-	exitFullscreen: skipBrowser(document, ['exitFullscreen', 'webkitExitFullscreen', 'mozCancelFullScreen']).bind(document)
+	isFullscreen: () => skipBrowser(document, isFsNames),
+	requestFullscreen: elem => skipBrowser(elem, reqFsNames).bind(elem)(),
+	exitFullscreen: skipBrowser(document, exitFsNames).bind(document)
 };
