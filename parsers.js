@@ -124,7 +124,18 @@ let parsers = [
 					} else if (string.has(char)) {
 						let start = pC.index++;
 						if (char == backtick) {
-							pC.skipToWithEscape(backtick, backslash);
+							const stop = new Set([backtick, newline]);
+							do {
+								pC.skipUntilWithEscape(stop, backslash);
+								if ((char = pC.chars[pC.index]) == newline) {
+									const value = _input.slice(start, pC.index);
+									start = pC.index += 1;
+									const token = {label: stringString, value};
+									currentLine.push(token);
+									currentLine = [];
+									lines.push(currentLine);
+								} else if (char == backtick) break;
+							} while (pC.index < pC.chars.length);
 						} else {
 							pC.skipUntilWithEscape(new Set([char, newline]), backslash);
 						}
@@ -137,21 +148,6 @@ let parsers = [
 					}
 				}
 				return lines;
-
-				// parser
-				/*let lines = [];
-				let currentLine = [];
-				lines.push(currentLine);
-				for (let n = 0; n < tokens.length; n++) {
-					let token = tokens[n];
-					if (token.value == "\n") {
-						currentLine = [];
-						lines.push(currentLine);
-					} else {
-						currentLine.push(token);
-					}
-				}
-				return lines;*/
 			};
 		}
 	},
